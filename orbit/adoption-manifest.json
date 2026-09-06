@@ -2,7 +2,7 @@
   "schemaVersion": "2.0.0",
   "repository": "appolon1908-hue/Codestra-Loki",
   "classification": "observability-backend",
-  "targetBranch": "codex/codestra-orbit-v2-codestra-loki",
+  "targetBranch": "feature/codestra-orbit-v2-codestra-loki",
   "adoptionMode": "n/a-no-rendered-interface",
   "domain": null,
   "domainStatus": "not-applicable",
