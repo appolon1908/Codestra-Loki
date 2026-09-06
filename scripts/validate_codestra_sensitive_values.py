@@ -44,7 +44,7 @@ PLACEHOLDER_RE = re.compile(
     r"^(?:"
     r"INJECT_FROM_(?:OPENBAO|SECRET_FILE|DEPLOYMENT)|"
     r"REDACTED|\[REDACTED\]|"
-    r"\$\{[A-Z0-9_]+(?::[^}]*)?\}"
+    r"\$\{[A-Z0-9_]+(?::\?[^}]*)?\}"
     r")$"
 )
 
@@ -118,7 +118,16 @@ def prove_detector() -> None:
         {"api_key": "INJECT_FROM_OPENBAO"},
         {"session_token": "${LOKI_SESSION_TOKEN:?injected at runtime}"},
         {"captureAuthorizationHeaders": False},
+        {"password": "${PASSWORD:?injected at runtime}"},
     )
+    unsafe_placeholder_samples = (
+        {"password": "${PASSWORD:-committed-secret}"},
+        {"clientSecret": "${CLIENT_SECRET:committed-secret}"},
+    )
+    for sample in unsafe_placeholder_samples:
+        if not find_violations(sample):
+            raise SystemExit(f"sensitive-value detector accepted populated default: {sample}")
+
     for sample in safe_samples:
         if find_violations(sample):
             raise SystemExit(f"sensitive-value detector rejected safe control data: {sample}")
