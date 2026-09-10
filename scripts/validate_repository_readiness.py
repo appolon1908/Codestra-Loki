@@ -3,15 +3,15 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import re
 from pathlib import Path
 
 import yaml
 
+from config_bundle_contract import verify_bundle_files
+
 ROOT = Path(__file__).resolve().parents[1]
-SHA256 = re.compile(r"^[0-9a-f]{64}$")
 GIT_SHA = re.compile(r"^[0-9a-f]{40}$")
 IMAGE = re.compile(r"^[a-z0-9./_-]+@sha256:[0-9a-f]{64}$")
 AUTHORITY = (
@@ -62,15 +62,7 @@ def main() -> None:
         fail("configuration manifest identity mismatch")
     if manifest.get("productionActivation") is not False:
         fail("configuration bundle may not activate production")
-    files = manifest.get("files")
-    if not isinstance(files, dict) or len(files) != 5:
-        fail("configuration manifest must contain exactly five files")
-    for relative, expected in files.items():
-        path = ROOT / relative
-        if not path.is_file() or not SHA256.fullmatch(str(expected)):
-            fail(f"invalid configuration manifest entry: {relative}")
-        if hashlib.sha256(path.read_bytes()).hexdigest() != expected:
-            fail(f"configuration checksum mismatch: {relative}")
+    verify_bundle_files(ROOT, manifest.get("files"))
     compose_text = (ROOT / "codestra/deploy/compose.candidate.yaml").read_text(encoding="utf-8")
     compose = yaml.safe_load(compose_text)
     services = compose.get("services", {})

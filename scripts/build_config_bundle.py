@@ -10,6 +10,8 @@ import json
 import tarfile
 from pathlib import Path
 
+from config_bundle_contract import verify_bundle_files
+
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = ROOT / "codestra/release/config-bundle.manifest.json"
 
@@ -23,13 +25,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, default=ROOT / "dist/loki-config.tar.gz")
     args = parser.parse_args()
     manifest = json.loads(MANIFEST.read_text(encoding="utf-8"))
-    paths: list[Path] = []
-    for relative, expected in sorted(manifest["files"].items()):
-        path = ROOT / relative
-        actual = digest(path)
-        if actual != expected:
-            raise SystemExit(f"checksum mismatch for {relative}: {actual} != {expected}")
-        paths.append(path)
+    paths = verify_bundle_files(ROOT, manifest.get("files"))
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("wb") as raw:
         with gzip.GzipFile(filename="", mode="wb", fileobj=raw, mtime=0) as compressed:
