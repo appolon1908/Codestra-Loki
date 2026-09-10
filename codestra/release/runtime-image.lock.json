@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0.0",
+  "artifactModel": "verified-upstream-image-plus-signed-config",
+  "upstreamRepository": "grafana/loki",
+  "upstreamVersion": "v3.6.5",
+  "upstreamTagCommit": "1967a6a3fd5589f0f1e9be14cdd5637ecf0b65d3",
+  "image": "docker.io/grafana/loki@sha256:847c287ada0e12603910589f42038c5cdaaad04e248bd1dc6c6e0920a235f427",
+  "linuxAmd64Manifest": "sha256:146a6add37403d7f74aa17f52a849de9babf24f92890613cacf346e12a969efc",
+  "upstreamSignature": {
+    "available": false,
+    "verification": "NO_SIGSTORE_SIGNATURE_PUBLISHED"
+  },
+  "productionActivation": false
+}

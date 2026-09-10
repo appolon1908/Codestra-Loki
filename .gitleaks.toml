@@ -1,0 +1,14 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Official upstream documentation and test fixtures excluded from the signed configuration bundle"
+paths = [
+  '''^upstream/(?:docs?|examples?|.*(?:test|fixture|mock|sample).*)/''',
+  '''^upstream/.*(?:_test\.go$|\.golden$|/testdata/)''',
+  '''^upstream/operator/\.bingo/(?:controller-gen|kind|kustomize|operator-sdk|promtool)\.sum$''',
+  '''^upstream/operator/hack/addon_grafana_gateway_ocp(?:_oauth)?\.yaml$''',
+  '''^upstream/production/helm/meta-monitoring/README\.md$''',
+  '''^upstream/vendor/cloud\.google\.com/go/storage/storage\.replay$''',
+  '''^upstream/vendor/modernc\.org/sqlite/lib/sqlite_g_0000000000060000\.go$''',
+]

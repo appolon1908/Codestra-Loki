@@ -1,0 +1,124 @@
+name: codestra-loki
+
+x-loki-environment: &loki-environment
+  LOKI_S3_ENDPOINT: ${LOKI_S3_ENDPOINT:?required}
+  LOKI_S3_REGION: ${LOKI_S3_REGION:-us-east-1}
+  LOKI_S3_CHUNKS_BUCKET: ${LOKI_S3_CHUNKS_BUCKET:?required}
+  LOKI_S3_RULER_BUCKET: ${LOKI_S3_RULER_BUCKET:?required}
+  LOKI_S3_INSECURE: ${LOKI_S3_INSECURE:-false}
+  AWS_SHARED_CREDENTIALS_FILE: /run/secrets/loki_s3_credentials
+  AWS_PROFILE: codestra-loki
+  CODESTRA_LOKI_SOURCE_REVISION: ${CODESTRA_LOKI_SOURCE_REVISION:?required protected source SHA}
+  CODESTRA_LOKI_IMAGE_DIGEST: sha256:847c287ada0e12603910589f42038c5cdaaad04e248bd1dc6c6e0920a235f427
+  LOKI_ALERTMANAGER_URL: ${LOKI_ALERTMANAGER_URL:-http://alertmanager:9093}
+  OTEL_SERVICE_NAME: codestra-loki
+  OTEL_RESOURCE_ATTRIBUTES: service.namespace=codestra-observability,codestra.business=platform,deployment.environment=${CODESTRA_ENVIRONMENT:?required},deployment.id=${CODESTRA_DEPLOYMENT_ID:?required}
+  OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-http://otel-collector:4318}
+  OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+
+x-loki-service: &loki-service
+  image: docker.io/grafana/loki@sha256:847c287ada0e12603910589f42038c5cdaaad04e248bd1dc6c6e0920a235f427
+  command:
+    - -config.file=/etc/loki/loki.yaml
+    - -config.expand-env=true
+    - -target=all
+  restart: unless-stopped
+  user: "10001:10001"
+  read_only: true
+  init: true
+  stop_grace_period: 2m
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp:size=64m,mode=1777
+  expose:
+    - "3100"
+    - "9095"
+    - "7946"
+  networks:
+    - codestra-observability
+  secrets:
+    - loki_s3_credentials
+  ulimits:
+    nofile:
+      soft: 65536
+      hard: 65536
+  healthcheck:
+    test: ["CMD", "/usr/bin/loki", "-health"]
+    interval: 30s
+    timeout: 20s
+    retries: 5
+    start_period: 60s
+  logging:
+    driver: json-file
+    options:
+      max-size: 25m
+      max-file: "3"
+  labels:
+    codestra.business: platform
+    codestra.application: observability
+    codestra.service: loki
+    codestra.telemetry.collect: "true"
+    codestra.telemetry.noise-profile: infrastructure
+  deploy:
+    resources:
+      limits:
+        cpus: "2.0"
+        memory: 4G
+        pids: 512
+      reservations:
+        cpus: "0.5"
+        memory: 1G
+
+services:
+  loki-1:
+    <<: *loki-service
+    hostname: loki-1
+    environment:
+      <<: *loki-environment
+      LOKI_INSTANCE_ID: loki-1
+      COMPACTOR_MODE: main
+    volumes:
+      - ../config/loki.yaml:/etc/loki/loki.yaml:ro
+      - ../config/runtime-config.yaml:/etc/loki/runtime-config.yaml:ro
+      - loki-1-data:/var/lib/loki
+
+  loki-2:
+    <<: *loki-service
+    hostname: loki-2
+    environment:
+      <<: *loki-environment
+      LOKI_INSTANCE_ID: loki-2
+      COMPACTOR_MODE: worker
+    volumes:
+      - ../config/loki.yaml:/etc/loki/loki.yaml:ro
+      - ../config/runtime-config.yaml:/etc/loki/runtime-config.yaml:ro
+      - loki-2-data:/var/lib/loki
+
+  loki-3:
+    <<: *loki-service
+    hostname: loki-3
+    environment:
+      <<: *loki-environment
+      LOKI_INSTANCE_ID: loki-3
+      COMPACTOR_MODE: worker
+    volumes:
+      - ../config/loki.yaml:/etc/loki/loki.yaml:ro
+      - ../config/runtime-config.yaml:/etc/loki/runtime-config.yaml:ro
+      - loki-3-data:/var/lib/loki
+
+networks:
+  codestra-observability:
+    external: true
+    name: codestra-observability
+
+volumes:
+  loki-1-data:
+  loki-2-data:
+  loki-3-data:
+
+secrets:
+  loki_s3_credentials:
+    file: ${LOKI_S3_CREDENTIALS_FILE:?mount an OpenBao-rendered AWS shared-credentials file}

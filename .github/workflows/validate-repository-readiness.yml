@@ -1,0 +1,77 @@
+name: Validate Loki repository readiness
+on: [pull_request]
+permissions: {contents: read}
+jobs:
+  validate-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with: {ref: "${{ github.event.pull_request.head.sha }}", fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with: {python-version: "3.12"}
+      - name: Validate exact source and deterministic bundle
+        env: {HEAD_SHA: "${{ github.event.pull_request.head.sha }}", BASE_SHA: "${{ github.event.pull_request.base.sha }}"}
+        run: |
+          test "$(git rev-parse HEAD)" = "$HEAD_SHA"
+          python3 -m pip install --disable-pip-version-check --no-cache-dir -r requirements-validation.txt
+          python3 scripts/validate_codestra_enterprise_profile.py
+          python3 scripts/validate_codestra_sensitive_values.py
+          python3 scripts/validate_repository_readiness.py
+          python3 -m unittest discover -s tests -p 'test_*.py'
+          python3 scripts/build_config_bundle.py --output /tmp/loki-config.tar.gz
+          docker compose --env-file codestra/deploy/runtime.env.example --file codestra/deploy/compose.candidate.yaml config --no-interpolate >/dev/null
+          git diff --check "$BASE_SHA" "$HEAD_SHA"
+      - name: Scan changed and governed source with redacted output
+        env: {HEAD_SHA: "${{ github.event.pull_request.head.sha }}", BASE_SHA: "${{ github.event.pull_request.base.sha }}"}
+        run: |
+          archive="${RUNNER_TEMP}/gitleaks.tar.gz"
+          curl --fail --silent --show-error --location https://github.com/gitleaks/gitleaks/releases/download/v8.30.1/gitleaks_8.30.1_linux_x64.tar.gz --output "$archive"
+          echo "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb  $archive" | sha256sum --check -
+          tar -xzf "$archive" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" git --no-banner --redact=100 --exit-code 1 --log-opts="${BASE_SHA}..${HEAD_SHA}" .
+          "$RUNNER_TEMP/gitleaks" dir --no-banner --redact=100 --exit-code 1 .
+      - name: Validate with the exact accepted upstream image
+        run: |
+          image="$(python3 -c 'import json; print(json.load(open("codestra/release/runtime-image.lock.json"))["image"])')"
+          locked_amd64="$(python3 -c 'import json; print(json.load(open("codestra/release/runtime-image.lock.json"))["linuxAmd64Manifest"])')"
+          docker buildx imagetools inspect --raw "$image" > "$RUNNER_TEMP/loki-index.json"
+          actual_amd64="$(python3 - "$RUNNER_TEMP/loki-index.json" <<'PY'
+          import json, sys
+          index = json.load(open(sys.argv[1], encoding="utf-8"))
+          matches = [
+              item["digest"]
+              for item in index.get("manifests", [])
+              if item.get("platform", {}).get("os") == "linux"
+              and item.get("platform", {}).get("architecture") == "amd64"
+          ]
+          if len(matches) != 1:
+              raise SystemExit(f"expected exactly one linux/amd64 manifest, found {len(matches)}")
+          print(matches[0])
+          PY
+          )"
+          test "$actual_amd64" = "$locked_amd64"
+          docker pull "$image"
+          digest="${image##*@}"
+          docker image inspect "$image" | jq -e --arg digest "$digest" '.[0].RepoDigests | any(endswith("@" + $digest))'
+          docker run --rm --entrypoint /usr/bin/loki \
+            --volume "$PWD/codestra/config/loki.yaml:/etc/loki/loki.yaml:ro" \
+            --env LOKI_INSTANCE_ID=loki-ci --env COMPACTOR_MODE=main \
+            --env LOKI_S3_ENDPOINT=s3.internal.example:443 --env LOKI_S3_REGION=us-east-1 \
+            --env LOKI_S3_CHUNKS_BUCKET=codestra-loki-ci --env LOKI_S3_RULER_BUCKET=codestra-loki-ruler-ci \
+            --env LOKI_S3_INSECURE=false --env LOKI_ALERTMANAGER_URL=http://alertmanager:9093 \
+            "$image" -verify-config -config.file=/etc/loki/loki.yaml -config.expand-env=true
+  validate-merge-result:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with: {python-version: "3.12"}
+      - run: |
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          python3 -m pip install --disable-pip-version-check --no-cache-dir -r requirements-validation.txt
+          python3 scripts/validate_codestra_enterprise_profile.py
+          python3 scripts/validate_codestra_sensitive_values.py
+          python3 scripts/validate_repository_readiness.py
+          python3 -m unittest discover -s tests -p 'test_*.py'

@@ -1,0 +1,165 @@
+# Codestra Loki corporate configuration.
+# Runtime values are injected by the deployment controller with -config.expand-env=true.
+# This file prepares a three-node HA monolithic topology; it does not expose Loki publicly.
+
+auth_enabled: true
+target: all
+
+server:
+  http_listen_address: 0.0.0.0
+  http_listen_port: 3100
+  grpc_listen_address: 0.0.0.0
+  grpc_listen_port: 9095
+  log_level: info
+  log_format: json
+  http_server_idle_timeout: 120s
+  http_server_read_timeout: 310s
+  http_server_write_timeout: 310s
+  grpc_server_max_recv_msg_size: 33554432
+  grpc_server_max_send_msg_size: 33554432
+
+common:
+  path_prefix: /var/lib/loki
+  replication_factor: 3
+  compactor_grpc_address: loki-1:9095
+  ring:
+    instance_id: ${LOKI_INSTANCE_ID}
+    heartbeat_period: 15s
+    heartbeat_timeout: 1m
+    kvstore:
+      store: memberlist
+
+memberlist:
+  bind_addr: ["0.0.0.0"]
+  bind_port: 7946
+  join_members:
+    - loki-1:7946
+    - loki-2:7946
+    - loki-3:7946
+  abort_if_cluster_join_fails: true
+  cluster_label: codestra-loki-production
+  cluster_label_verification_disabled: false
+
+schema_config:
+  configs:
+    - from: "2026-01-01"
+      store: tsdb
+      object_store: s3
+      schema: v13
+      index:
+        prefix: codestra_loki_index_
+        period: 24h
+
+storage_config:
+  tsdb_shipper:
+    active_index_directory: /var/lib/loki/index
+    cache_location: /var/lib/loki/index-cache
+  use_thanos_objstore: true
+  object_store:
+    s3:
+      endpoint: ${LOKI_S3_ENDPOINT}
+      region: ${LOKI_S3_REGION:-us-east-1}
+      bucket_name: ${LOKI_S3_CHUNKS_BUCKET}
+      native_aws_auth_enabled: true
+      insecure: ${LOKI_S3_INSECURE:-false}
+
+runtime_config:
+  file: /etc/loki/runtime-config.yaml
+  period: 10s
+
+analytics:
+  reporting_enabled: false
+
+tracing:
+  enabled: true
+
+frontend:
+  log_queries_longer_than: 5s
+  compress_responses: true
+
+query_range:
+  align_queries_with_step: true
+  max_retries: 5
+  parallelise_shardable_queries: true
+
+querier:
+  max_concurrent: 8
+
+ingester:
+  chunk_idle_period: 10m
+  max_chunk_age: 1h
+  chunk_encoding: snappy
+  chunk_target_size: 2097152
+  chunk_block_size: 262144
+  wal:
+    dir: /var/lib/loki/wal
+    enabled: true
+    replay_memory_ceiling: 1GB
+    flush_on_shutdown: true
+  lifecycler:
+    num_tokens: 512
+    tokens_file_path: /var/lib/loki/ring-tokens
+    unregister_on_shutdown: true
+  shutdown_marker_path: /var/lib/loki
+
+compactor:
+  working_directory: /var/lib/loki/compactor
+  compaction_interval: 10m
+  apply_retention_interval: 15m
+  retention_enabled: true
+  retention_delete_delay: 2h
+  retention_delete_worker_count: 50
+  delete_request_store: s3
+  horizontal_scaling_mode: ${COMPACTOR_MODE:-worker}
+
+ruler_storage:
+  backend: s3
+  s3:
+    endpoint: ${LOKI_S3_ENDPOINT}
+    region: ${LOKI_S3_REGION:-us-east-1}
+    bucket_name: ${LOKI_S3_RULER_BUCKET}
+    native_aws_auth_enabled: true
+    insecure: ${LOKI_S3_INSECURE:-false}
+    bucket_lookup_type: path
+
+ruler:
+  enable_api: false
+  enable_alertmanager_v2: true
+  alertmanager_url: ${LOKI_ALERTMANAGER_URL}
+  ring:
+    kvstore:
+      store: memberlist
+limits_config:
+  allow_structured_metadata: true
+  discover_log_levels: true
+  ingestion_rate_strategy: global
+  ingestion_rate_mb: 16
+  ingestion_burst_size_mb: 32
+  per_stream_rate_limit: 5MB
+  per_stream_rate_limit_burst: 10MB
+  max_global_streams_per_user: 10000
+  max_label_names_per_series: 15
+  max_label_name_length: 128
+  max_label_value_length: 2048
+  max_line_size: 256KB
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  creation_grace_period: 10m
+  query_timeout: 300s
+  max_query_lookback: 4320h
+  max_entries_limit_per_query: 10000
+  max_query_parallelism: 16
+  split_queries_by_interval: 1h
+  retention_period: 2160h
+  retention_stream:
+    - selector: '{environment=~"development|test"}'
+      priority: 2
+      period: 336h
+    - selector: '{level=~"debug|trace"}'
+      priority: 1
+      period: 72h
+  shard_streams:
+    enabled: true
+    time_sharding_enabled: true
+    desired_rate: 262144
+  volume_enabled: true

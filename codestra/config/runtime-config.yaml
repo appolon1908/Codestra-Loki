@@ -1,0 +1,88 @@
+# Loki tenant IDs are Codestra business domains, never end-customer IDs.
+# Customer, user, message, order, request and trace identifiers remain structured fields only.
+
+overrides:
+  platform:
+    retention_period: 2160h
+    ingestion_rate_mb: 20
+    ingestion_burst_size_mb: 40
+    max_global_streams_per_user: 15000
+    max_query_parallelism: 24
+
+  codestra:
+    retention_period: 2160h
+    ingestion_rate_mb: 12
+    ingestion_burst_size_mb: 24
+    max_global_streams_per_user: 10000
+
+  moneybee:
+    retention_period: 4320h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+    max_global_streams_per_user: 8000
+
+  beyvra:
+    retention_period: 4320h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+    max_global_streams_per_user: 8000
+
+  breero:
+    retention_period: 2160h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+    max_global_streams_per_user: 8000
+
+  larim-a:
+    retention_period: 2160h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+    max_global_streams_per_user: 8000
+
+  transportation:
+    retention_period: 2160h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+    max_global_streams_per_user: 8000
+
+  booked4seasons:
+    retention_period: 2160h
+    ingestion_rate_mb: 6
+    ingestion_burst_size_mb: 12
+    max_global_streams_per_user: 6000
+
+  social:
+    retention_period: 2160h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+    max_global_streams_per_user: 8000
+
+  klyrow:
+    retention_period: 2160h
+    ingestion_rate_mb: 12
+    ingestion_burst_size_mb: 24
+    max_global_streams_per_user: 10000
+
+  telnexa:
+    retention_period: 2160h
+    ingestion_rate_mb: 12
+    ingestion_burst_size_mb: 24
+    max_global_streams_per_user: 10000
+
+  kyqra:
+    retention_period: 720h
+    ingestion_rate_mb: 16
+    ingestion_burst_size_mb: 32
+    max_global_streams_per_user: 12000
+
+  restaurant:
+    retention_period: 2160h
+    ingestion_rate_mb: 6
+    ingestion_burst_size_mb: 12
+    max_global_streams_per_user: 6000
+
+  provisioning:
+    retention_period: 4320h
+    ingestion_rate_mb: 8
+    ingestion_burst_size_mb: 16
+    max_global_streams_per_user: 8000

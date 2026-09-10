@@ -1,0 +1,93 @@
+name: Validate Codestra Loki corporate configuration
+
+on:
+  pull_request:
+    paths:
+      - 'codestra/**'
+      - 'scripts/validate_codestra_enterprise_profile.py'
+      - 'scripts/validate_codestra_sensitive_values.py'
+      - '.github/workflows/validate-codestra-enterprise-profile.yml'
+      - 'upstream/go.mod'
+      - 'upstream/go.sum'
+  push:
+    branches: [development, test, staging, production, main]
+    paths:
+      - 'codestra/**'
+      - 'scripts/validate_codestra_enterprise_profile.py'
+      - 'scripts/validate_codestra_sensitive_values.py'
+      - '.github/workflows/validate-codestra-enterprise-profile.yml'
+      - 'upstream/go.mod'
+      - 'upstream/go.sum'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: codestra-loki-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out exact head
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97
+        with:
+          python-version: '3.12'
+
+      - name: Validate Codestra policy overlay and credential-value safety
+        env:
+          PYTHONPYCACHEPREFIX: /tmp/codestra-loki-pycache
+        run: |
+          python3 -m pip install --disable-pip-version-check --no-cache-dir -r requirements-validation.txt
+          python3 -m py_compile \
+            scripts/validate_codestra_enterprise_profile.py \
+            scripts/validate_codestra_sensitive_values.py
+          python3 scripts/validate_codestra_enterprise_profile.py
+          python3 scripts/validate_codestra_sensitive_values.py
+
+      - name: Render hardened Compose candidate
+        run: |
+          docker compose \
+            --env-file codestra/deploy/runtime.env.example \
+            -f codestra/deploy/compose.candidate.yaml \
+            config > /tmp/codestra-loki-compose.rendered.yaml
+          test -s /tmp/codestra-loki-compose.rendered.yaml
+          ! grep -Eq 'published:|host_ip:|:latest([[:space:]]|$)' /tmp/codestra-loki-compose.rendered.yaml
+
+      - name: Set up Go from locked upstream source
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version-file: upstream/go.mod
+          cache-dependency-path: upstream/go.sum
+
+      - name: Build Loki config validator from locked source
+        working-directory: upstream
+        run: |
+          mkdir -p ../.bin
+          go build -trimpath -o ../.bin/loki ./cmd/loki
+
+      - name: Verify Loki configuration with exact source
+        env:
+          LOKI_INSTANCE_ID: loki-ci
+          COMPACTOR_MODE: main
+          LOKI_S3_ENDPOINT: s3.internal.example:443
+          LOKI_S3_REGION: us-east-1
+          LOKI_S3_CHUNKS_BUCKET: codestra-loki-ci
+          LOKI_S3_RULER_BUCKET: codestra-loki-ruler-ci
+          LOKI_S3_INSECURE: 'false'
+          LOKI_ALERTMANAGER_URL: http://alertmanager:9093
+        run: |
+          .bin/loki \
+            -verify-config \
+            -config.file=codestra/config/loki.yaml \
+            -config.expand-env=true
+
+      - name: Confirm source-only safety state
+        run: |
+          test "$(python3 -c 'import json; print(json.load(open("codestra/enterprise-profile.v1.json"))["status"])')" = "CONFIG_PREPARED_NOT_DEPLOYED"
+          ! grep -RInE --exclude='runtime.env.example' --exclude='*.md' '(BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY|AKIA[0-9A-Z]{16})' codestra

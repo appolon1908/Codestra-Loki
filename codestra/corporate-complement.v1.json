@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "component": "loki",
+  "codestraRole": "central structured log authority",
+  "corporatePurpose": "Make logs searchable by business, application, service, deployment and incident context without exposing secrets or customer identifiers as labels.",
+  "businessPortfolio": ["codestra", "moneybee", "beyvra", "breero", "larim-a", "transportation", "booked4seasons", "social", "klyrow", "telnexa", "kyqra", "restaurant", "provisioning"],
+  "standardDimensions": ["codestra_business", "application", "service", "environment", "server", "region", "deployment"],
+  "forbiddenLabels": ["tenant_id", "customer_id", "user_id", "email", "phone", "request_id", "trace_id", "message_id", "financial_transaction_id"],
+  "corporateFeatures": ["structured_json_logs", "business_filtered_exploration", "security_audit_streams", "deployment_correlation", "trace_log_correlation", "retention_tiers", "redaction_before_ingestion", "incident_context_links"],
+  "dashboardContribution": ["business_log_volume", "security_errors", "provider_error_context", "deployment_related_log_spikes", "incident_investigation_links"],
+  "beyvraBoundary": "Only redacted trading health and dependency context is allowed; no broker secrets, raw order payloads, signing material or trade-execution authority.",
+  "activationStatus": "CONFIG_PREPARED_NOT_DEPLOYED"
+}

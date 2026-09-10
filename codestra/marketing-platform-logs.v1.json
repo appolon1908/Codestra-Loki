@@ -1,0 +1,13 @@
+{
+  "schemaVersion": "1.0",
+  "status": "LOG_CONTRACT_PREPARED_NOT_DEPLOYED",
+  "domain": "codestra-marketing-platform",
+  "services": ["kong","keycloak","middleware","marketing","ai","communication","social-control","social-runtime","n8n","odoo"],
+  "requiredFields": ["timestamp","level","service","application","environment","deployment","server","region","codestra_business","event"],
+  "optionalSafeFields": ["result","reason"],
+  "protectedStructuredCorrelationFields": ["correlation_id","trace_id","span_id"],
+  "forbiddenLabels": ["email","phone","name","address","message_body","prompt_body","response_body","raw_url","query_string","idempotency_key","correlation_id","trace_id","span_id"],
+  "forbiddenPayloadFields": ["access_token","refresh_token","client_secret","password","email","phone","name","address","message_body","prompt_body","response_body","raw_url","query_string","idempotency_key"],
+  "requirements": {"structuredLogs": true,"redactionRequired": true,"businessIsolation": true,"unboundedHighCardinalityLabels": false,"correlationFieldsNeverLabels": true},
+  "activation": {"ingestionEnabled": false,"productionEnabled": false}
+}

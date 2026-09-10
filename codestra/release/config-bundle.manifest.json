@@ -1,0 +1,14 @@
+{
+  "schemaVersion": "1.0.0",
+  "component": "loki",
+  "repository": "appolon1908-hue/Codestra-Loki",
+  "artifactType": "application/vnd.codestra.loki.config.v1+tar",
+  "productionActivation": false,
+  "files": {
+    "codestra/api/service-contract.v1.json": "428f3d1e609e69e2acd4e562bd46e9f6067ae27caaf3a8e9005c1d20856fd564",
+    "codestra/config/loki.yaml": "259edeb1129d965396050bbb4f18940cb8a3884e4b892b4687a84dd63cfad7b5",
+    "codestra/config/runtime-config.yaml": "bde0c2eb70360c02400ac11908df15555e4441585b2c6b681c7e527b2cd7ebfa",
+    "codestra/deploy/compose.candidate.yaml": "d7b926b7345146b0798c4865d18fef0d28e8aaa804962e7f0bba240eee8b4013",
+    "codestra/deploy/runtime.env.example": "793c4372c347823167fa17fdfbc63d0b00cd1fe76d0abf03c5dc9f2bf98ad54f"
+  }
+}

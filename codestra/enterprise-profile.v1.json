@@ -1,0 +1,143 @@
+{
+  "schemaVersion": "1.1",
+  "component": "loki",
+  "role": "central-log-authority",
+  "canonicalHostname": "loki.codestra.media",
+  "exposure": "internal_private",
+  "status": "CONFIG_PREPARED_NOT_DEPLOYED",
+  "businessScope": [
+    "codestra",
+    "moneybee",
+    "beyvra",
+    "breero",
+    "larim-a",
+    "transportation",
+    "booked4seasons",
+    "social",
+    "klyrow",
+    "telnexa",
+    "kyqra",
+    "restaurant",
+    "provisioning"
+  ],
+  "platformScope": [
+    "caddy",
+    "kong",
+    "keycloak",
+    "middleware",
+    "odoo",
+    "n8n",
+    "vicidial",
+    "postgresql",
+    "redis",
+    "openbao",
+    "workers",
+    "observability"
+  ],
+  "tenancy": {
+    "enabled": true,
+    "unit": "codestra_business",
+    "customerIdentifiersAsTenantIds": false,
+    "callerSuppliedTenantHeaderTrusted": false,
+    "crossBusinessAccessDefault": "deny"
+  },
+  "topology": {
+    "mode": "ha_monolithic",
+    "instances": 3,
+    "replicationFactor": 3,
+    "ring": "memberlist",
+    "wal": true,
+    "compactorCoordinator": true
+  },
+  "storage": {
+    "schema": "v13",
+    "index": "tsdb",
+    "objectStore": "s3_compatible",
+    "encryptedCredentialsFromRuntime": true,
+    "separateRulerBucket": true
+  },
+  "requiredLabels": [
+    "environment",
+    "service",
+    "application",
+    "server",
+    "region",
+    "deployment",
+    "codestra_business"
+  ],
+  "structuredFields": [
+    "timestamp",
+    "level",
+    "request_id",
+    "correlation_id",
+    "trace_id",
+    "operation",
+    "actor_type",
+    "result",
+    "error_code"
+  ],
+  "forbiddenHighCardinalityLabels": [
+    "tenant_id",
+    "customer_id",
+    "user_id",
+    "request_id",
+    "correlation_id",
+    "trace_id",
+    "email",
+    "phone",
+    "message_id",
+    "order_id",
+    "raw_url",
+    "query_string",
+    "container_id",
+    "pod_uid"
+  ],
+  "redaction": {
+    "requiredBeforeIngestion": true,
+    "forbiddenContent": [
+      "authorization_headers",
+      "cookies",
+      "api_keys",
+      "passwords",
+      "private_keys",
+      "session_tokens",
+      "database_dsns",
+      "broker_signing_secrets",
+      "raw_sensitive_payloads"
+    ]
+  },
+  "retention": {
+    "defaultHours": 2160,
+    "financialAndProvisioningHours": 4320,
+    "highVolumeKyqraHours": 720,
+    "developmentTestHours": 336,
+    "debugTraceHours": 72
+  },
+  "features": {
+    "structuredJson": true,
+    "traceCorrelation": true,
+    "businessFiltering": true,
+    "businessTenantIsolation": true,
+    "securityAuditStreams": true,
+    "retentionTiers": true,
+    "volumeGuardrails": true,
+    "tenantSafeInvestigation": true,
+    "deploymentCorrelation": true,
+    "s3BackedTsdb": true,
+    "walRecovery": true,
+    "privateHaTopology": true,
+    "runtimeOverrides": true,
+    "selfMonitoring": true
+  },
+  "integrations": {
+    "ingestion": ["alloy", "opentelemetry"],
+    "query": ["grafana"],
+    "metrics": ["prometheus"],
+    "traces": ["tempo"],
+    "rulerDestination": "alertmanager"
+  },
+  "financialTradingBoundary": {
+    "business": "beyvra",
+    "rule": "Logs may contain safe aggregate trading health and redacted event metadata but never broker secrets, credentials, raw authorization headers, raw order payloads, authoritative ledger state, or trade-mutation authority."
+  }
+}
