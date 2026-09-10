@@ -4,7 +4,7 @@
   "codestra_repository": "appolon1908-hue/Codestra-Loki",
   "upstream_repository": "grafana/loki",
   "upstream_clone_url": "https://github.com/grafana/loki.git",
-  "upstream_ref": "main",
+  "upstream_ref": "d8a4d755695929a19ce53ab730a8776ddae09ea2",
   "import_path": "upstream",
   "import_mode": "shallow-source-snapshot",
   "preserve_upstream_license": true,
