@@ -5,13 +5,18 @@
   "authority": "logs",
   "exposure": "private",
   "native_ports": [
-    3100
+    3100,
+    9095,
+    7946
   ],
   "inputs": [
-    "alloy:logs"
+    "alloy:logs (Loki push)",
+    "opentelemetry:logs (OTLP HTTP)",
+    "object-storage:s3"
   ],
   "outputs": [
-    "grafana:read"
+    "grafana:read (through the private query boundary)",
+    "object-storage:s3 (chunks, index and deletion state)"
   ],
   "controls": [
     "tenant, service, environment, and severity are allowed labels",
