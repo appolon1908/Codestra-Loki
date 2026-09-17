@@ -96,3 +96,11 @@ Initial engineering objectives, to be calibrated from staging evidence:
 ## Release rule
 
 This repository owns Loki source overlays and validation only. Promotion is `feature/* -> development -> test -> staging -> production -> main`. CI success is necessary but does not authorize deployment. Staging evidence, security approval, immutable artifacts, backup/restore proof, and a documented rollback are required before production promotion.
+
+## Monitoring platform contract (2026-09-16)
+
+- Loki stores sanitised operational logs on private listeners for business-domain tenants; it has no content filter of its own. `codestra/redaction-contract.v1.json` names, for every forbidden content class (bearer tokens, OpenBao tokens, OAuth secrets, passwords, authorization headers, webhook signatures, private keys, database and SMTP credentials, JWT-shaped values), the reviewed Alloy and OpenTelemetry stages that redact or drop it before ingestion.
+- Labels stay bounded by `limits_config`; `correlation_id`, `trace_id`, `span_id` and the OpenBao audit `type`/`operation`/`error` are structured metadata only, never indexed labels. Tenant IDs are business domains and caller-supplied tenant headers are never trusted.
+- `codestra/rules/platform/openbao-audit-rules.yml` is the pinned copy of the OpenBao audit ruler rules (audit stream silent, root-token use, permission-denial surge, policy and control-plane mutation, initialisation and authentication failures) evaluated for the `platform` tenant; the ruler API stays disabled.
+- Object-storage credentials are OpenBao secret references (`codestra/<environment>/observability/loki/object-storage`, identity `loki-runtime`) rendered by the OpenBao agent as the AWS shared credentials file; nothing is committed.
+- `scripts/validate_codestra_loki_platform.py [--openbao-repo PATH]` fails closed on any drift of these guarantees.
