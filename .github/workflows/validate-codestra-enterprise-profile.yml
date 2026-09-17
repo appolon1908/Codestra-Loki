@@ -50,7 +50,7 @@ jobs:
           python3 scripts/validate_codestra_enterprise_profile.py
           python3 scripts/validate_codestra_sensitive_values.py
           python3 scripts/validate_codestra_loki_platform.py
-          python3 -m pytest -q tests/test_loki_platform.py
+          python3 -m unittest tests/test_loki_platform.py -v
 
       - name: Render hardened Compose candidate
         run: |
