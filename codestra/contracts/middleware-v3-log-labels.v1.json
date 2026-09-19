@@ -1,0 +1,145 @@
+{
+  "schema_version": "1.0",
+  "contract_id": "middleware-v3-log-labels",
+  "lane": "E",
+  "status": "PREPARED_DISABLED",
+  "activation_enabled": false,
+  "provider_effects_enabled": false,
+  "purpose": "Loki keeps Middleware V3 logs queryable by a closed, low-cardinality label set. Identifiers (tenant/customer, command, operation, correlation, e-mail, phone) are structured fields or structured metadata and are never stream labels. Redaction happens in the collectors before ingestion.",
+  "middleware": {
+    "repository": "appolon1908-hue/Middleware-",
+    "prep_base_sha": "22d023a9c65b0789a0f7ee6c28548753521a9eff",
+    "v3_final_sha": "PENDING",
+    "repin_required_after_v3_merge": true,
+    "v3_candidate_observed": {
+      "branch": "mission/middleware-v3-command-kernel-20260919",
+      "sha": "1acb2ae",
+      "authority": "informational only; unmerged, owned by the Middleware V3 session"
+    }
+  },
+  "flow": [
+    "applications / exporters",
+    "Codestra-Alloy (labels, structured metadata, redact) or Codestra-Telemetry agent -> gateway",
+    "Loki (mTLS, X-Scope-OrgID tenant)"
+  ],
+  "label_policy": {
+    "indexed_labels_allowed": [
+      "codestra_business",
+      "application",
+      "service",
+      "environment",
+      "server",
+      "region",
+      "deployment",
+      "log_source",
+      "level",
+      "detected_level"
+    ],
+    "never_indexed_labels": [
+      "tenant_id",
+      "customer_id",
+      "account_id",
+      "user_id",
+      "email",
+      "phone",
+      "request_id",
+      "correlation_id",
+      "trace_id",
+      "span_id",
+      "message_id",
+      "order_id",
+      "path",
+      "url",
+      "filename",
+      "container_id",
+      "image_id",
+      "pod_uid",
+      "process_pid",
+      "operation_id",
+      "command_id",
+      "customer",
+      "lease_id",
+      "incident_id",
+      "fingerprint",
+      "secret_ref",
+      "reference_uri",
+      "deployment_sha"
+    ],
+    "structured_metadata_allowed": [
+      "correlation_id",
+      "trace_id",
+      "span_id",
+      "audit_type",
+      "audit_operation",
+      "audit_error",
+      "operation_id",
+      "deployment_sha"
+    ],
+    "structured_fields_kept_in_line": [
+      "service_id",
+      "environment",
+      "deployment_sha",
+      "correlation_id",
+      "operation_id",
+      "trace_id",
+      "span_id",
+      "command_family",
+      "adapter",
+      "result"
+    ],
+    "rule": "a label value set must be a closed enum known at build time; anything per-tenant, per-command, per-operation, per-request or personal is a structured field, never a label"
+  },
+  "bounds_from_loki_yaml": {
+    "allow_structured_metadata": true,
+    "max_label_names_per_series": 15,
+    "max_label_name_length": 128,
+    "max_label_value_length": 2048,
+    "max_line_size": "256KB",
+    "reject_old_samples_max_age": "168h"
+  },
+  "redaction_reference": {
+    "contract": "codestra/redaction-contract.v1.json",
+    "enforced_by": [
+      "Codestra-Alloy codestra/config.alloy loki.process.redact",
+      "Codestra-Telemetry codestra/collector-agent.yaml attributes/redact + transform/secret_shaped"
+    ],
+    "proofs": [
+      "Codestra-Alloy scripts/validate_middleware_v3_log_redaction.py",
+      "Codestra-Telemetry scripts/validate_middleware_v3_trace_pipeline.py"
+    ],
+    "loki_has_no_content_filter": true
+  },
+  "ruler_policy": {
+    "rule_files": "codestra/rules/**/*.yml",
+    "aggregation_labels_allowed": [
+      "codestra_business",
+      "application",
+      "service",
+      "environment",
+      "server",
+      "region",
+      "deployment",
+      "log_source",
+      "level",
+      "detected_level",
+      "audit_type",
+      "audit_operation"
+    ],
+    "never_aggregate_by": [
+      "tenant_id",
+      "customer_id",
+      "user_id",
+      "email",
+      "phone",
+      "command_id",
+      "operation_id",
+      "correlation_id",
+      "trace_id"
+    ]
+  },
+  "v3_expectations": [
+    "Middleware V3 JSON logs carry service_id, environment, deployment_sha, correlation_id, operation_id, trace_id and span_id as fields; Alloy stores correlation_id, operation_id, trace_id, span_id and deployment_sha as structured metadata",
+    "Grafana Explore drills from a Middleware incident to logs by structured metadata (correlation_id / operation_id) and never by a high-cardinality label",
+    "Re-pin middleware.v3_final_sha after V3 merges and re-run scripts/validate_middleware_v3_log_labels.py"
+  ]
+}

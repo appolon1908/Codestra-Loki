@@ -13,8 +13,8 @@
     {
       "class": "openbao_tokens",
       "enforcedBy": [
-        "Codestra-Alloy loki.process.redact ((hvs|hvb).* and s.* -> [REDACTED_OPENBAO_TOKEN])",
-        "Codestra-Telemetry collector-agent.yaml transform/secret_shaped"
+        "Codestra-Alloy loki.process.redact ((hvs|hvb).*, s.*, b.* -> [REDACTED_OPENBAO_TOKEN]; *_token keys)",
+        "Codestra-Telemetry collector-agent.yaml transform/secret_shaped (hvs|hvb, s., b.)"
       ]
     },
     {
@@ -55,15 +55,15 @@
     {
       "class": "database_credentials",
       "enforcedBy": [
-        "Codestra-Alloy loki.process.redact (database_url|dsn)",
-        "Codestra-Telemetry attributes/redact"
+        "Codestra-Alloy loki.process.redact (database_url|dsn; suffix stage *_password|*_dsn|*_connection_string; postgres://, redis://, amqp:// URL credentials)",
+        "Codestra-Telemetry attributes/redact (suffix pattern) and transform/secret_shaped (URL credentials)"
       ]
     },
     {
       "class": "smtp_credentials",
       "enforcedBy": [
-        "Codestra-Alloy loki.process.redact (password|api_key keys)",
-        "Codestra-Telemetry attributes/redact"
+        "Codestra-Alloy loki.process.redact (password|api_key keys; suffix stage *_password|*_credentials|*_connection_string; smtp://user:pass@ URL credentials)",
+        "Codestra-Telemetry attributes/redact (suffix pattern) and transform/secret_shaped (URL credentials)"
       ]
     },
     {
@@ -106,7 +106,16 @@
       "container_id",
       "image_id",
       "pod_uid",
-      "process_pid"
+      "process_pid",
+      "operation_id",
+      "command_id",
+      "customer",
+      "lease_id",
+      "incident_id",
+      "fingerprint",
+      "secret_ref",
+      "reference_uri",
+      "deployment_sha"
     ],
     "structuredMetadataAllowed": [
       "correlation_id",
@@ -114,7 +123,9 @@
       "span_id",
       "audit_type",
       "audit_operation",
-      "audit_error"
+      "audit_error",
+      "operation_id",
+      "deployment_sha"
     ],
     "boundsFrom": "codestra/config/loki.yaml limits_config",
     "maxLabelNamesPerSeries": 15,
