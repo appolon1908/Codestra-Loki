@@ -20,7 +20,7 @@ EXPECTED_GITMODULES = """[submodule \"upstream/operator/website/themes/doks\"]
 def validate_upstream(source: dict, lock: dict) -> None:
     expected = {
         "component": "loki",
-        "codestra_repository": "appolon1908-hue/Codestra-Loki",
+        "codestra_repository": "ingtrader21-spec/Codestra-Loki",
         "upstream_repository": "grafana/loki",
         "upstream_clone_url": "https://github.com/grafana/loki.git",
         "import_path": "upstream",

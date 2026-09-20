@@ -1,6 +1,6 @@
 # Codestra Loki Authority
 
-Principal repository: `appolon1908-hue/Codestra-Loki`
+Principal repository: `ingtrader21-spec/Codestra-Loki`
 Canonical service host: `loki.codestra.media`
 Canonical DNS target: `37.27.128.39`
 
