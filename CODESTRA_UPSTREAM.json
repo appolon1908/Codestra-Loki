@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "component": "loki",
-  "codestra_repository": "appolon1908-hue/Codestra-Loki",
+  "codestra_repository": "ingtrader21-spec/Codestra-Loki",
   "upstream_repository": "grafana/loki",
   "upstream_clone_url": "https://github.com/grafana/loki.git",
   "upstream_ref": "d8a4d755695929a19ce53ab730a8776ddae09ea2",
