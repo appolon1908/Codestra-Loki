@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "component": "loki",
+  "principle": "Loki stores sanitised operational logs only. It has no content filter of its own, so every class below is redacted or dropped by the reviewed collector stages before ingestion, and this repository bounds what may become an indexed label.",
+  "forbiddenContentClasses": [
+    {
+      "class": "bearer_tokens",
+      "enforcedBy": [
+        "Codestra-Alloy codestra/config.alloy loki.process.redact (Bearer -> [REDACTED])",
+        "Codestra-Telemetry codestra/collector-agent.yaml transform/secret_shaped"
+      ]
+    },
+    {
+      "class": "openbao_tokens",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact ((hvs|hvb).* and s.* -> [REDACTED_OPENBAO_TOKEN])",
+        "Codestra-Telemetry collector-agent.yaml transform/secret_shaped"
+      ]
+    },
+    {
+      "class": "oauth_client_secrets",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (client_secret key)",
+        "Codestra-Telemetry attributes/redact"
+      ]
+    },
+    {
+      "class": "passwords",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (password|passwd keys)",
+        "Codestra-Telemetry attributes/redact"
+      ]
+    },
+    {
+      "class": "authorization_headers",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (authorization|proxy_authorization|cookie|set-cookie|x-vault-token|x-openbao-token)",
+        "Codestra-Telemetry attributes/redact"
+      ]
+    },
+    {
+      "class": "webhook_signatures",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (broker(_|.)signing_key, exchange secret)",
+        "Codestra-Telemetry attributes/redact"
+      ]
+    },
+    {
+      "class": "private_keys",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (drop private_key_material)",
+        "Codestra-Telemetry transform/secret_shaped"
+      ]
+    },
+    {
+      "class": "database_credentials",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (database_url|dsn)",
+        "Codestra-Telemetry attributes/redact"
+      ]
+    },
+    {
+      "class": "smtp_credentials",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (password|api_key keys)",
+        "Codestra-Telemetry attributes/redact"
+      ]
+    },
+    {
+      "class": "jwt_shaped_values",
+      "enforcedBy": [
+        "Codestra-Alloy loki.process.redact (eyJ... -> [REDACTED_JWT])",
+        "Codestra-Telemetry transform/secret_shaped"
+      ]
+    }
+  ],
+  "labelPolicy": {
+    "indexedLabelsAllowed": [
+      "codestra_business",
+      "application",
+      "service",
+      "environment",
+      "server",
+      "region",
+      "deployment",
+      "log_source",
+      "level",
+      "detected_level"
+    ],
+    "neverIndexedLabels": [
+      "tenant_id",
+      "customer_id",
+      "account_id",
+      "user_id",
+      "email",
+      "phone",
+      "request_id",
+      "correlation_id",
+      "trace_id",
+      "span_id",
+      "message_id",
+      "order_id",
+      "path",
+      "url",
+      "filename",
+      "container_id",
+      "image_id",
+      "pod_uid",
+      "process_pid"
+    ],
+    "structuredMetadataAllowed": [
+      "correlation_id",
+      "trace_id",
+      "span_id",
+      "audit_type",
+      "audit_operation",
+      "audit_error"
+    ],
+    "boundsFrom": "codestra/config/loki.yaml limits_config",
+    "maxLabelNamesPerSeries": 15,
+    "maxLabelNameLength": 128,
+    "maxLabelValueLength": 2048,
+    "maxLineSize": "256KB"
+  },
+  "tenancy": {
+    "tenantIdSource": "codestra_business from the deployment (Alloy) or the collector resource (OTel)",
+    "tenantIsBusinessDomainNeverCustomer": true,
+    "callerSuppliedTenantHeaderTrusted": false
+  },
+  "openbaoAudit": {
+    "stream": "{service=\"openbao\", log_source=\"openbao-audit\"}",
+    "hmacPreserved": true,
+    "publicEndpointDelivery": false,
+    "rules": "codestra/rules/platform/openbao-audit-rules.yml"
+  },
+  "runtimeApplyAuthorized": false
+}
